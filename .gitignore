@@ -1,0 +1,16 @@
+# Rust/Cargo
+/target/
+
+# PDF files (test outputs)
+/output/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
