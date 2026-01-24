@@ -65,8 +65,10 @@ pub struct ImageInfo {
     pub filter: String,
     /// Size in bytes
     pub size_bytes: usize,
-    /// Effective DPI (if display info available)
-    pub effective_dpi: Option<f32>,
+    /// Effective DPI X (if display info available)
+    pub dpi_x: Option<f32>,
+    /// Effective DPI Y (if display info available)
+    pub dpi_y: Option<f32>,
 }
 
 /// Images grouped by page
@@ -1615,6 +1617,155 @@ pub fn extract_pdf_images_info(pdf_bytes: &[u8]) -> Result<Vec<PageImages>, Resa
     Ok(result)
 }
 
+/// Extracted image data with format information
+#[derive(Debug, Clone)]
+pub struct ExtractedImage {
+    /// Image data bytes
+    pub data: Vec<u8>,
+    /// Format: "jpeg" or "png"
+    pub format: String,
+    /// MIME type
+    pub mime_type: String,
+}
+
+/// Extract a single image from a PDF in its native format when possible
+/// Returns JPEG for DCTDecode images, PNG for others
+/// object_id format: "num gen" e.g. "12 0"
+pub fn extract_image_native(pdf_bytes: &[u8], object_id_str: &str) -> Result<ExtractedImage, ResampleError> {
+    let doc = Document::load_mem(pdf_bytes)
+        .map_err(|e| ResampleError::LoadError(e.to_string()))?;
+
+    // Parse object ID
+    let parts: Vec<&str> = object_id_str.split_whitespace().collect();
+    if parts.len() != 2 {
+        return Err(ResampleError::ProcessingError("Invalid object ID format".to_string()));
+    }
+    
+    let obj_num: u32 = parts[0].parse()
+        .map_err(|_| ResampleError::ProcessingError("Invalid object number".to_string()))?;
+    let gen_num: u16 = parts[1].parse()
+        .map_err(|_| ResampleError::ProcessingError("Invalid generation number".to_string()))?;
+    
+    let obj_id: ObjectId = (obj_num, gen_num);
+
+    // Get the stream
+    let stream = match doc.get_object(obj_id) {
+        Ok(Object::Stream(s)) => s,
+        _ => return Err(ResampleError::ProcessingError("Object is not an image stream".to_string())),
+    };
+
+    // Check filter type
+    let filter = stream
+        .dict
+        .get(b"Filter")
+        .ok()
+        .and_then(|f| match f {
+            Object::Name(n) => Some(String::from_utf8_lossy(n).to_string()),
+            Object::Array(arr) => arr.first().and_then(|f| match f {
+                Object::Name(n) => Some(String::from_utf8_lossy(n).to_string()),
+                _ => None,
+            }),
+            _ => None,
+        });
+
+    // Check for SMask (alpha channel)
+    let has_smask = stream.dict.get(b"SMask").is_ok();
+
+    // If it's a JPEG without SMask, return the raw JPEG data
+    if filter.as_deref() == Some("DCTDecode") && !has_smask {
+        return Ok(ExtractedImage {
+            data: stream.content.clone(),
+            format: "jpeg".to_string(),
+            mime_type: "image/jpeg".to_string(),
+        });
+    }
+
+    // Otherwise, decode and convert to PNG
+    let width = stream
+        .dict
+        .get(b"Width")
+        .ok()
+        .and_then(|w| match w {
+            Object::Integer(n) => Some(*n as u32),
+            _ => None,
+        })
+        .unwrap_or(0);
+
+    let height = stream
+        .dict
+        .get(b"Height")
+        .ok()
+        .and_then(|h| match h {
+            Object::Integer(n) => Some(*n as u32),
+            _ => None,
+        })
+        .unwrap_or(0);
+
+    if width == 0 || height == 0 {
+        return Err(ResampleError::ProcessingError("Invalid image dimensions".to_string()));
+    }
+
+    let color_space = stream
+        .dict
+        .get(b"ColorSpace")
+        .ok()
+        .map(|cs| get_color_space_name(cs, &doc))
+        .unwrap_or_else(|| "DeviceRGB".to_string());
+
+    let bits_per_component = stream
+        .dict
+        .get(b"BitsPerComponent")
+        .ok()
+        .and_then(|b| match b {
+            Object::Integer(n) => Some(*n as u32),
+            _ => None,
+        })
+        .unwrap_or(8);
+
+    // Decode the image
+    let img = decode_image_stream(stream, width, height, &color_space, bits_per_component)
+        .map_err(|e| ResampleError::ProcessingError(e))?;
+
+    // Check for SMask and apply alpha
+    let final_img = if let Ok(Object::Reference(smask_id)) = stream.dict.get(b"SMask") {
+        if let Ok(Object::Stream(smask_stream)) = doc.get_object(*smask_id) {
+            match decode_smask_stream(smask_stream, width, height) {
+                Ok(alpha_data) => {
+                    let rgb = img.to_rgb8();
+                    let mut rgba_data = Vec::with_capacity((width * height * 4) as usize);
+                    for (pixel, alpha) in rgb.pixels().zip(alpha_data.iter()) {
+                        rgba_data.push(pixel[0]);
+                        rgba_data.push(pixel[1]);
+                        rgba_data.push(pixel[2]);
+                        rgba_data.push(*alpha);
+                    }
+                    if let Some(rgba_img) = image::RgbaImage::from_raw(width, height, rgba_data) {
+                        DynamicImage::ImageRgba8(rgba_img)
+                    } else {
+                        img
+                    }
+                }
+                Err(_) => img,
+            }
+        } else {
+            img
+        }
+    } else {
+        img
+    };
+
+    // Encode as PNG
+    let mut png_bytes = Vec::new();
+    final_img.write_to(&mut std::io::Cursor::new(&mut png_bytes), image::ImageFormat::Png)
+        .map_err(|e| ResampleError::ProcessingError(format!("Failed to encode PNG: {}", e)))?;
+
+    Ok(ExtractedImage {
+        data: png_bytes,
+        format: "png".to_string(),
+        mime_type: "image/png".to_string(),
+    })
+}
+
 /// Collect all image object IDs referenced from a page
 fn collect_page_images(doc: &Document, page_id: ObjectId) -> Vec<ObjectId> {
     let mut images: Vec<ObjectId> = Vec::new();
@@ -1803,7 +1954,8 @@ fn extract_image_info_from_stream(
         })
         .unwrap_or_else(|| "raw".to_string());
 
-    let effective_dpi = display_info.map(|info| info.max_effective_dpi());
+    let dpi_x = display_info.map(|info| info.effective_dpi_x());
+    let dpi_y = display_info.map(|info| info.effective_dpi_y());
 
     ImageInfo {
         object_id: (obj_id.0, obj_id.1),
@@ -1814,7 +1966,8 @@ fn extract_image_info_from_stream(
         bits_per_component,
         filter,
         size_bytes: stream.content.len(),
-        effective_dpi,
+        dpi_x,
+        dpi_y,
     }
 }
 

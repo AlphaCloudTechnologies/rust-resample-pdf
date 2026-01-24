@@ -1,12 +1,69 @@
 //! WebAssembly bindings for PDF Image Resampler
 
 use wasm_bindgen::prelude::*;
-use crate::{resample_pdf_bytes, extract_pdf_images_info, ResampleOptions};
+use crate::{resample_pdf_bytes, extract_pdf_images_info, extract_image_native, ResampleOptions};
 
 /// Initialize panic hook for better error messages in browser console
 #[wasm_bindgen(start)]
 pub fn init() {
     console_error_panic_hook::set_once();
+}
+
+/// Get image information from a PDF without processing
+/// Returns JSON string with page-by-page image details
+#[wasm_bindgen]
+pub fn get_pdf_image_info(pdf_bytes: &[u8]) -> Result<String, JsError> {
+    let page_images = extract_pdf_images_info(pdf_bytes)
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
+    let json = serde_json::to_string(&page_images_to_json(&page_images))
+        .map_err(|e| JsError::new(&e.to_string()))?;
+
+    Ok(json)
+}
+
+/// Extract a single image from a PDF in its native format
+/// Returns JPEG for DCTDecode images, PNG for others
+/// object_id should be in format "num gen" e.g. "12 0"
+#[wasm_bindgen]
+pub fn get_image_data(pdf_bytes: &[u8], object_id: &str) -> Result<ExtractedImageJs, JsError> {
+    let result = extract_image_native(pdf_bytes, object_id)
+        .map_err(|e| JsError::new(&e.to_string()))?;
+    
+    Ok(ExtractedImageJs {
+        data: result.data,
+        format: result.format,
+        mime_type: result.mime_type,
+    })
+}
+
+/// Extracted image data with format information
+#[wasm_bindgen]
+pub struct ExtractedImageJs {
+    data: Vec<u8>,
+    format: String,
+    mime_type: String,
+}
+
+#[wasm_bindgen]
+impl ExtractedImageJs {
+    /// Get the image data bytes
+    #[wasm_bindgen(getter)]
+    pub fn data(&self) -> Vec<u8> {
+        self.data.clone()
+    }
+
+    /// Get the format ("jpeg" or "png")
+    #[wasm_bindgen(getter)]
+    pub fn format(&self) -> String {
+        self.format.clone()
+    }
+
+    /// Get the MIME type ("image/jpeg" or "image/png")
+    #[wasm_bindgen(getter)]
+    pub fn mime_type(&self) -> String {
+        self.mime_type.clone()
+    }
 }
 
 /// Resample images in a PDF to a target DPI
@@ -99,7 +156,8 @@ fn page_images_to_json(pages: &[crate::PageImages]) -> Vec<serde_json::Value> {
                     "bpc": img.bits_per_component,
                     "filter": img.filter,
                     "size": img.size_bytes,
-                    "dpi": img.effective_dpi
+                    "dpiX": img.dpi_x,
+                    "dpiY": img.dpi_y
                 })
             }).collect::<Vec<_>>()
         })
