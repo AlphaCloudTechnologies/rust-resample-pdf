@@ -1,6 +1,6 @@
 # resample-pdf
 
-A fast Rust CLI tool for downsampling images in PDF files. Shrinks bloated PDFs by resampling high-DPI images to a target resolution while preserving visual quality.
+A fast Rust tool for downsampling images in PDF files. Available as a CLI and browser-based web app. Shrinks bloated PDFs by resampling high-DPI images to a target resolution while preserving visual quality.
 
 ## Features
 
@@ -9,9 +9,12 @@ A fast Rust CLI tool for downsampling images in PDF files. Shrinks bloated PDFs 
 - **Alpha preservation** — handles transparency correctly via SMask
 - **Deep scanning** — finds images in pages, Form XObjects, annotations, tiling patterns, and soft masks
 - **JPEG output** — 4:2:0 chroma subsampling for optimal compression
-- **No external dependencies** — pure Rust with lopdf
+- **Cross-platform** — runs as CLI or in browser via WebAssembly
+- **Privacy-first** — web version processes files entirely in your browser
 
 ## Installation
+
+### CLI
 
 ```bash
 cargo build --release
@@ -19,7 +22,29 @@ cargo build --release
 
 Binary: `target/release/resample-pdf`
 
+### WebAssembly (Browser)
+
+Build the WASM module:
+
+```bash
+# Install wasm-pack if you don't have it
+cargo install wasm-pack
+
+# Build WASM module
+./build-wasm.sh
+```
+
+Serve the web app:
+
+```bash
+cd web && python3 -m http.server 8080
+```
+
+Open http://localhost:8080 in your browser.
+
 ## Usage
+
+### CLI
 
 ```bash
 resample-pdf -i input.pdf -o output.pdf [OPTIONS]
@@ -54,6 +79,16 @@ resample-pdf -i mixed.pdf -o output.pdf -d 200 --min-dpi 400
 # Debug mode
 resample-pdf -i input.pdf -o output.pdf -v
 ```
+
+### Web Interface
+
+The browser version provides a drag-and-drop interface with the same options:
+
+- **Target DPI** — resolution threshold for resampling
+- **JPEG Quality** — compression quality (1–100)
+- **Min DPI Threshold** — skip images below this DPI
+
+All processing happens locally in your browser — no files are uploaded to any server.
 
 ## How it works
 

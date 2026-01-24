@@ -1,6 +1,9 @@
 # Rust/Cargo
 /target/
 
+# WASM build output
+/web/pkg/
+
 # PDF files (test outputs)
 /output/
 
