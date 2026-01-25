@@ -145,8 +145,8 @@
         /* Drop zone */
         .drop-zone {
             border: 2px dashed var(--border-color);
-            border-radius: 12px;
-            padding: 50px 40px;
+            border-radius: 8px;
+            padding: 14px 16px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -183,24 +183,26 @@
         .drop-zone-content {
             position: relative;
             z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .drop-icon {
-            font-size: 42px;
-            margin-bottom: 14px;
+            font-size: 22px;
             opacity: 0.8;
         }
 
         .drop-text {
-            font-size: 1.15rem;
+            font-size: 0.9rem;
             font-weight: 500;
             color: var(--text-primary);
-            margin-bottom: 6px;
         }
 
         .drop-subtext {
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.8rem;
         }
 
         .file-input {
@@ -700,13 +702,23 @@
 
         /* Large image indicators */
         .size-badge {
-            display: inline-block;
+            display: block;
             padding: 2px 6px;
             border-radius: 4px;
             font-size: 0.65rem;
             font-weight: 600;
             text-transform: uppercase;
-            margin-left: 6px;
+            margin-bottom: 2px;
+        }
+        
+        .size-badge:last-child {
+            margin-bottom: 0;
+        }
+
+        .image-table th:last-child,
+        .image-table td:last-child {
+            width: 70px;
+            min-width: 70px;
         }
 
         .size-badge.top-dims {
@@ -960,7 +972,7 @@
             }
 
             .drop-zone {
-                padding: 35px 20px;
+                padding: 12px 14px;
             }
 
             .results-header {
@@ -996,8 +1008,7 @@
                 <div class="drop-zone" id="drop-zone">
                     <div class="drop-zone-content">
                         <div class="drop-icon">📄</div>
-                        <div class="drop-text">Drop your PDF here</div>
-                        <div class="drop-subtext">or click to browse</div>
+                        <div class="drop-text">Drop PDF here <span class="drop-subtext">or click to browse</span></div>
                     </div>
                     <input type="file" class="file-input" id="file-input" accept=".pdf,application/pdf">
                 </div>
@@ -1165,6 +1176,15 @@
             return 'dpi-low';
         }
 
+        // Get gradient color from green (0%) to red (50%+)
+        function getPercentColor(percent) {
+            // Scale so 50% = full red
+            const p = Math.min(50, Math.max(0, percent)) / 50;
+            const r = Math.round(220 * p);
+            const g = Math.round(180 * (1 - p));
+            return `rgb(${r}, ${g}, 0)`;
+        }
+
         // Calculate median of an array
         function median(arr) {
             if (arr.length === 0) return null;
@@ -1266,15 +1286,6 @@
                     const item = document.createElement('div');
                     item.className = 'largest-image-item';
                     item.title = 'Click to jump to image';
-                    // Build DPI display (single value)
-                    let dpiHtml = '';
-                    if (img.dpiX && img.dpiY) {
-                        const maxDpi = Math.max(img.dpiX, img.dpiY);
-                        const dpiClass = getDpiClass(maxDpi);
-                        dpiHtml = `<span class="dpi-value ${dpiClass}">${maxDpi.toFixed(0)} DPI</span>`;
-                    } else {
-                        dpiHtml = `<span class="dpi-na">— DPI</span>`;
-                    }
                     item.innerHTML = `
                         <div class="largest-image-thumb-placeholder" data-largest-id="${safeObjectId}">🖼</div>
                         <img class="largest-image-thumb" data-largest-id="${safeObjectId}" style="display: none;">
@@ -1282,7 +1293,6 @@
                             <span class="page-num">Page ${img.pageNumber}</span>
                             <span class="dims">${formatSize(img.size)}</span>
                             <span class="dims">${img.width} × ${img.height}</span>
-                            ${dpiHtml}
                         </div>
                     `;
                     item.addEventListener('click', () => scrollToImage(rowId));
@@ -1510,11 +1520,15 @@
                                         <th>BPC</th>
                                         <th>Filter</th>
                                         <th>Size</th>
+                                        <th>%</th>
                                         <th>DPI</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                 `;
+                
+                const pdfSize = selectedFile ? selectedFile.size : 1;
                 
                 page.images.forEach((img, idx) => {
                     let dpiDisplay;
@@ -1541,6 +1555,10 @@
                     if (isTopDims) badges += '<span class="size-badge top-dims">Top Dims</span>';
                     if (isTopSize) badges += '<span class="size-badge top-size">Top Size</span>';
                     
+                    // Calculate size percentage
+                    const sizePercent = img.size ? (img.size / pdfSize * 100) : 0;
+                    const percentColor = getPercentColor(sizePercent);
+                    
                     html += `
                         <tr id="${rowId}" class="${rowClass}">
                             <td>
@@ -1556,7 +1574,7 @@
                                             title="Download as ${img.filter === 'DCTDecode' ? 'JPEG' : 'PNG'}">⬇</button>
                                 </div>
                             </td>
-                            <td>${idx + 1}${badges}</td>
+                            <td>${idx + 1}</td>
                             <td><span class="type-badge ${typeClass}">${img.type}</span></td>
                             <td>${img.width}</td>
                             <td>${img.height}</td>
@@ -1564,7 +1582,9 @@
                             <td>${img.bpc}</td>
                             <td>${img.filter}</td>
                             <td>${formatSize(img.size)}</td>
+                            <td><span style="color: ${percentColor}; font-weight: 600;">${sizePercent.toFixed(1)}%</span></td>
                             <td>${dpiDisplay}</td>
+                            <td>${badges}</td>
                         </tr>
                     `;
                 });

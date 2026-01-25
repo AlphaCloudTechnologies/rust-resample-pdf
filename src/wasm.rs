@@ -73,6 +73,7 @@ impl ExtractedImageJs {
 /// * `target_dpi` - Target DPI for images (default: 150)
 /// * `quality` - JPEG quality 1-100 (default: 75)
 /// * `min_dpi` - Minimum DPI threshold - only resample images above this DPI (default: 0)
+/// * `compress_streams` - Compress PDF streams (default: true)
 ///
 /// # Returns
 /// The resampled PDF as a byte array, or throws an error
@@ -82,11 +83,13 @@ pub fn resample_pdf(
     target_dpi: Option<f32>,
     quality: Option<u8>,
     min_dpi: Option<f32>,
+    compress_streams: Option<bool>,
 ) -> Result<Vec<u8>, JsError> {
     let options = ResampleOptions {
         target_dpi: target_dpi.unwrap_or(150.0),
         quality: quality.unwrap_or(75),
         min_dpi: min_dpi.unwrap_or(0.0),
+        compress_streams: compress_streams.unwrap_or(true),
         verbose: false,
     };
 
@@ -103,6 +106,7 @@ pub fn resample_pdf(
 /// * `target_dpi` - Target DPI for images (default: 150)
 /// * `quality` - JPEG quality 1-100 (default: 75)
 /// * `min_dpi` - Minimum DPI threshold - only resample images above this DPI (default: 0)
+/// * `compress_streams` - Compress PDF streams (default: true)
 ///
 /// # Returns
 /// A `ResampleResultJs` object containing the resampled PDF and statistics
@@ -112,11 +116,13 @@ pub fn resample_pdf_with_info(
     target_dpi: Option<f32>,
     quality: Option<u8>,
     min_dpi: Option<f32>,
+    compress_streams: Option<bool>,
 ) -> Result<ResampleResultJs, JsError> {
     let options = ResampleOptions {
         target_dpi: target_dpi.unwrap_or(150.0),
         quality: quality.unwrap_or(75),
         min_dpi: min_dpi.unwrap_or(0.0),
+        compress_streams: compress_streams.unwrap_or(true),
         verbose: false,
     };
 

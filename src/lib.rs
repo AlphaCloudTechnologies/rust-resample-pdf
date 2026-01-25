@@ -23,6 +23,8 @@ pub struct ResampleOptions {
     pub quality: u8,
     /// Minimum DPI threshold - only resample images above this DPI
     pub min_dpi: f32,
+    /// Compress PDF streams (reduces file size)
+    pub compress_streams: bool,
     /// Verbose output
     pub verbose: bool,
 }
@@ -33,6 +35,7 @@ impl Default for ResampleOptions {
             target_dpi: 150.0,
             quality: 75,
             min_dpi: 0.0,
+            compress_streams: true,
             verbose: false,
         }
     }
@@ -1543,6 +1546,11 @@ pub fn resample_pdf_bytes(
     let result = process_images_in_doc(&mut doc, &display_info_map, options, log_fn)
         .map_err(|e| ResampleError::ProcessingError(e))?;
 
+    // Compress streams if requested
+    if options.compress_streams {
+        doc.compress();
+    }
+
     // Save to bytes
     let mut output_bytes = Vec::new();
     doc.save_to(&mut output_bytes)
@@ -2023,6 +2031,11 @@ pub mod file_ops {
 
         let result = process_images_in_doc(&mut doc, &display_info_map, options, log_fn)
             .map_err(|e| ResampleError::ProcessingError(e))?;
+
+        // Compress streams if requested
+        if options.compress_streams {
+            doc.compress();
+        }
 
         // Save
         doc.save(output_path)
