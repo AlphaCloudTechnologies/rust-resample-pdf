@@ -38,6 +38,7 @@
             color: var(--text-primary);
             min-height: 100vh;
             overflow-x: hidden;
+            font-size: 18px;
         }
 
         /* Background decoration */
@@ -370,14 +371,113 @@
             font-size: 0.85rem;
             font-weight: 600;
             color: var(--text-secondary);
-            margin-bottom: 14px;
+            margin-bottom: 4px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
+        .summary-card-hint {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .table-hint {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            padding: 10px 14px;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* DPI Distribution Chart */
+        .dpi-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .dpi-chart-compact {
+            gap: 6px;
+            margin-top: 6px;
+        }
+
+        .dpi-chart-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dpi-chart-label {
+            width: 85px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .dpi-chart-compact .dpi-chart-label {
+            width: 75px;
+            font-size: 0.65rem;
+        }
+
+        .dpi-chart-track {
+            flex: 1;
+            height: 18px;
+            background: var(--bg-primary);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .dpi-chart-compact .dpi-chart-track {
+            height: 14px;
+        }
+
+        .dpi-chart-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+            min-width: 2px;
+        }
+
+        .dpi-chart-fill.dpi-low { background: linear-gradient(90deg, #f85149, #da3633); }
+        .dpi-chart-fill.dpi-medium { background: linear-gradient(90deg, #d29922, #bf8700); }
+        .dpi-chart-fill.dpi-good { background: linear-gradient(90deg, #58a6ff, #388bfd); }
+        .dpi-chart-fill.dpi-high { background: linear-gradient(90deg, #3fb950, #2ea043); }
+
+        .dpi-chart-value {
+            width: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            flex-shrink: 0;
+        }
+
+        .dpi-chart-compact .dpi-chart-value {
+            width: 60px;
+            font-size: 0.7rem;
+        }
+
+        .dpi-chart-value.dpi-low { color: #f85149; }
+        .dpi-chart-value.dpi-medium { color: #d29922; }
+        .dpi-chart-value.dpi-good { color: #58a6ff; }
+        .dpi-chart-value.dpi-high { color: #3fb950; }
+
+        .dpi-chart-empty {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-align: center;
+            padding: 10px;
+        }
+
         .summary-table {
             width: 100%;
-            font-size: 0.85rem;
+            font-size: 14px;
         }
 
         .summary-table tr {
@@ -452,15 +552,51 @@
 
         .compact-group {
             display: flex;
-            gap: 32px;
+            gap: 1px;
             flex-wrap: wrap;
+        }
+
+        .dpi-section-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            margin-top: 4px;
+        }
+
+        .dpi-section-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .compact-group.dpi-group {
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .dpi-group .dpi-stat {
+            flex-direction: row;
+            justify-content: space-between;
+            width: 100%;
+            min-width: 180px;
+            padding: 2px 14px;
+        }
+
+        .dpi-group .dpi-stat-value {
+            font-size: 1.3rem;
         }
 
         .dpi-stat {
             display: flex;
             flex-direction: column;
-            gap: 4px;
-            min-width: 70px;
+            align-items: center;
+            gap: 6px;
+            min-width: 80px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            background: var(--bg-tertiary);
         }
 
         .dpi-stat-label {
@@ -473,8 +609,25 @@
 
         .dpi-stat-value {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
+            font-size: 1.5rem;
+            font-weight: 700;
             color: var(--text-primary);
+        }
+
+        .dpi-stat-value.dpi-high {
+            color: #3fb950;
+        }
+
+        .dpi-stat-value.dpi-good {
+            color: #58a6ff;
+        }
+
+        .dpi-stat-value.dpi-medium {
+            color: #d29922;
+        }
+
+        .dpi-stat-value.dpi-low {
+            color: #f85149;
         }
 
         .summary-card-wide {
@@ -530,7 +683,7 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 0.8rem;
+            font-size: 0.95rem;
             color: var(--text-secondary);
             flex: 1;
         }
@@ -538,12 +691,12 @@
         .largest-image-info .page-num {
             font-weight: 600;
             color: var(--accent-primary);
-            min-width: 55px;
+            min-width: 60px;
         }
 
         .largest-image-info .dims {
             font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
+            font-size: 0.9rem;
             color: var(--text-primary);
         }
 
@@ -648,7 +801,7 @@
         .image-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.8rem;
+            font-size: 14px;
         }
 
         .image-table th {
@@ -739,6 +892,35 @@
             background: rgba(9, 105, 218, 0.08) !important;
         }
 
+        /* Percentage pie chart */
+        .percent-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .percent-pie {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            position: relative;
+        }
+
+        .percent-pie-inner {
+            position: absolute;
+            inset: 6px;
+            border-radius: 50%;
+            background: var(--bg-secondary);
+        }
+
+        .percent-text {
+            font-size: 11px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+
         /* Clickable top 5 items */
         .largest-image-item {
             cursor: pointer;
@@ -751,7 +933,8 @@
         }
 
         .dpi-value {
-            font-weight: 600;
+            font-weight: 700;
+            font-size: 1.1rem;
         }
 
         .dpi-high {
@@ -783,8 +966,8 @@
         }
 
         .img-thumbnail {
-            width: 48px;
-            height: 48px;
+            width: 72px;
+            height: 72px;
             object-fit: contain;
             border-radius: 4px;
             background: var(--bg-tertiary);
@@ -798,8 +981,8 @@
         }
 
         .img-thumbnail-placeholder {
-            width: 48px;
-            height: 48px;
+            width: 72px;
+            height: 72px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -829,7 +1012,7 @@
             border-radius: 5px;
             cursor: pointer;
             transition: all 0.2s;
-            font-size: 14px;
+            font-size: 0.9rem;
             text-decoration: none;
         }
 
@@ -1072,37 +1255,44 @@
                                 <span class="compact-value highlight" id="stat-images">-</span>
                             </div>
                             <div class="compact-divider"></div>
-                            <div class="compact-row">
-                                <span class="compact-label">DPI</span>
-                                <span class="compact-group">
-                                    <span class="dpi-stat">
-                                        <span class="dpi-stat-label">Median</span>
-                                        <span class="dpi-stat-value" id="summary-median-dpi">-</span>
-                                    </span>
-                                    <span class="dpi-stat">
-                                        <span class="dpi-stat-label">High</span>
-                                        <span class="dpi-stat-value" id="summary-highest-dpi">-</span>
-                                    </span>
-                                    <span class="dpi-stat">
-                                        <span class="dpi-stat-label">Low</span>
-                                        <span class="dpi-stat-value" id="summary-lowest-dpi">-</span>
-                                    </span>
+                            <div class="dpi-section-label">DPI</div>
+                            <div class="dpi-section-desc">Median = typical quality of this PDF • High = highest DPI found • Low = lowest DPI found</div>
+                            <div class="compact-group dpi-group">
+                                <span class="dpi-stat">
+                                    <span class="dpi-stat-label">Median</span>
+                                    <span class="dpi-stat-value" id="summary-median-dpi">-</span>
                                 </span>
+                                <span class="dpi-stat">
+                                    <span class="dpi-stat-label">High</span>
+                                    <span class="dpi-stat-value" id="summary-highest-dpi">-</span>
+                                </span>
+                                <span class="dpi-stat">
+                                    <span class="dpi-stat-label">Low</span>
+                                    <span class="dpi-stat-value" id="summary-lowest-dpi">-</span>
+                                </span>
+                            </div>
+                            <div class="compact-divider"></div>
+                            <div class="dpi-section-label" style="font-size: 0.9rem;">Distribution</div>
+                            <div class="dpi-chart dpi-chart-compact" id="dpi-distribution-chart">
+                                <div class="dpi-chart-empty">No images analyzed</div>
                             </div>
                         </div>
                     </div>
                     <div class="summary-card summary-card-wide">
-                        <div class="summary-card-title">Top 5 Largest Images(Dimensions)</div>
+                        <div class="summary-card-title">Top Largest Images(Dimensions)</div>
+                        <div class="summary-card-hint">Click to jump to image in table</div>
                         <div class="largest-images-grid" id="largest-images-grid">
                         </div>
                     </div>
                     <div class="summary-card summary-card-wide">
-                        <div class="summary-card-title">Top 5 Largest Images (Size)</div>
+                        <div class="summary-card-title">Top Largest Images (Size)</div>
+                        <div class="summary-card-hint">Click to jump to image in table</div>
                         <div class="largest-images-grid" id="largest-images-size-grid">
                         </div>
                     </div>
                 </div>
 
+                <div class="table-hint">💡 Click on image preview to view full size • Click download icon to download image</div>
                 <div id="image-info-content"></div>
             </div>
         </main>
@@ -1215,27 +1405,89 @@
                 .filter(img => img.dpiX && img.dpiY)
                 .map(img => Math.max(img.dpiX, img.dpiY));
 
+            // Helper to get DPI color class
+            const getDpiColorClass = (dpi) => {
+                if (dpi >= 300) return 'dpi-high';
+                if (dpi >= 150) return 'dpi-good';
+                if (dpi >= 72) return 'dpi-medium';
+                return 'dpi-low';
+            };
+
             if (dpiMaxValues.length > 0) {
-                document.getElementById('summary-median-dpi').textContent = Math.round(median(dpiMaxValues));
-                document.getElementById('summary-highest-dpi').textContent = Math.round(Math.max(...dpiMaxValues));
-                document.getElementById('summary-lowest-dpi').textContent = Math.round(Math.min(...dpiMaxValues));
+                const medianDpi = Math.round(median(dpiMaxValues));
+                const highDpi = Math.round(Math.max(...dpiMaxValues));
+                const lowDpi = Math.round(Math.min(...dpiMaxValues));
+
+                const medianEl = document.getElementById('summary-median-dpi');
+                const highEl = document.getElementById('summary-highest-dpi');
+                const lowEl = document.getElementById('summary-lowest-dpi');
+
+                medianEl.textContent = medianDpi + ' DPI';
+                medianEl.className = 'dpi-stat-value ' + getDpiColorClass(medianDpi);
+
+                highEl.textContent = highDpi + ' DPI';
+                highEl.className = 'dpi-stat-value ' + getDpiColorClass(highDpi);
+
+                lowEl.textContent = lowDpi + ' DPI';
+                lowEl.className = 'dpi-stat-value ' + getDpiColorClass(lowDpi);
             } else {
                 document.getElementById('summary-median-dpi').textContent = '-';
                 document.getElementById('summary-highest-dpi').textContent = '-';
                 document.getElementById('summary-lowest-dpi').textContent = '-';
             }
 
+            // DPI Distribution Chart
+            const dpiChart = document.getElementById('dpi-distribution-chart');
+            if (dpiMaxValues.length > 0) {
+                // Count images in each DPI range
+                const dpiRanges = {
+                    low: { count: 0, label: '<72 (Low)', class: 'dpi-low' },
+                    medium: { count: 0, label: '72-149 (Screen)', class: 'dpi-medium' },
+                    good: { count: 0, label: '150-299 (Good)', class: 'dpi-good' },
+                    high: { count: 0, label: '300+ (Print)', class: 'dpi-high' }
+                };
+
+                dpiMaxValues.forEach(dpi => {
+                    if (dpi >= 300) dpiRanges.high.count++;
+                    else if (dpi >= 150) dpiRanges.good.count++;
+                    else if (dpi >= 72) dpiRanges.medium.count++;
+                    else dpiRanges.low.count++;
+                });
+
+                const maxCount = Math.max(...Object.values(dpiRanges).map(r => r.count));
+                const total = dpiMaxValues.length;
+
+                let chartHtml = '';
+                ['high', 'good', 'medium', 'low'].forEach(key => {
+                    const range = dpiRanges[key];
+                    const percent = maxCount > 0 ? (range.count / maxCount) * 100 : 0;
+                    const pctOfTotal = total > 0 ? ((range.count / total) * 100).toFixed(0) : 0;
+                    chartHtml += `
+                        <div class="dpi-chart-bar">
+                            <span class="dpi-chart-label">${range.label}</span>
+                            <div class="dpi-chart-track">
+                                <div class="dpi-chart-fill ${range.class}" style="width: ${percent}%"></div>
+                            </div>
+                            <span class="dpi-chart-value ${range.class}">${range.count} (${pctOfTotal}%)</span>
+                        </div>
+                    `;
+                });
+                dpiChart.innerHTML = chartHtml;
+            } else {
+                dpiChart.innerHTML = '<div class="dpi-chart-empty">No images with DPI info</div>';
+            }
+
             // Top 5 largest images by pixel count
             const sortedByPixels = allImages
                 .filter(img => img.width && img.height)
                 .sort((a, b) => (b.width * b.height) - (a.width * a.height))
-                .slice(0, 5);
+                .slice(0, 6);
 
-            // Top 5 largest images by file size
+            // Top 6 largest images by file size
             const sortedByFileSize = allImages
                 .filter(img => img.size)
                 .sort((a, b) => b.size - a.size)
-                .slice(0, 5);
+                .slice(0, 6);
 
             // Populate pixel-based grid
             const largestGrid = document.getElementById('largest-images-grid');
@@ -1250,22 +1502,12 @@
                     const item = document.createElement('div');
                     item.className = 'largest-image-item';
                     item.title = 'Click to jump to image';
-                    // Build DPI display (single value)
-                    let dpiHtml = '';
-                    if (img.dpiX && img.dpiY) {
-                        const maxDpi = Math.max(img.dpiX, img.dpiY);
-                        const dpiClass = getDpiClass(maxDpi);
-                        dpiHtml = `<span class="dpi-value ${dpiClass}">${maxDpi.toFixed(0)} DPI</span>`;
-                    } else {
-                        dpiHtml = `<span class="dpi-na">— DPI</span>`;
-                    }
                     item.innerHTML = `
                         <div class="largest-image-thumb-placeholder" data-largest-id="${safeObjectId}">🖼</div>
                         <img class="largest-image-thumb" data-largest-id="${safeObjectId}" style="display: none;">
                         <div class="largest-image-info">
                             <span class="page-num">Page ${img.pageNumber}</span>
                             <span class="dims">${img.width} × ${img.height}</span>
-                            ${dpiHtml}
                         </div>
                     `;
                     item.addEventListener('click', () => scrollToImage(rowId));
@@ -1292,7 +1534,6 @@
                         <div class="largest-image-info">
                             <span class="page-num">Page ${img.pageNumber}</span>
                             <span class="dims">${formatSize(img.size)}</span>
-                            <span class="dims">${img.width} × ${img.height}</span>
                         </div>
                     `;
                     item.addEventListener('click', () => scrollToImage(rowId));
@@ -1479,19 +1720,19 @@
             document.getElementById('stat-pages').textContent = pages.length;
             document.getElementById('stat-images').textContent = totalImages;
 
-            // Calculate top 5 by dimensions and by size for highlighting
-            const top5Dims = new Set(
+            // Calculate top 6 by dimensions and by size for highlighting
+            const top6Dims = new Set(
                 allImages
                     .filter(img => img.width && img.height)
                     .sort((a, b) => (b.width * b.height) - (a.width * a.height))
-                    .slice(0, 5)
+                    .slice(0, 6)
                     .map(img => img.objectId)
             );
-            const top5Size = new Set(
+            const top6Size = new Set(
                 allImages
                     .filter(img => img.size)
                     .sort((a, b) => b.size - a.size)
-                    .slice(0, 5)
+                    .slice(0, 6)
                     .map(img => img.objectId)
             );
 
@@ -1514,13 +1755,11 @@
                                         <th>Preview</th>
                                         <th>#</th>
                                         <th>Type</th>
-                                        <th>Width</th>
-                                        <th>Height</th>
-                                        <th>Color</th>
-                                        <th>BPC</th>
-                                        <th>Filter</th>
+                                        <th>Image Size</th>
+                                        <th>Display Size</th>
+                                        <th>Format</th>
                                         <th>Size</th>
-                                        <th>%</th>
+                                        <th>Size(%)</th>
                                         <th>DPI</th>
                                         <th></th>
                                     </tr>
@@ -1540,14 +1779,23 @@
                         dpiDisplay = `<span class="dpi-na">—</span>`;
                     }
                     
+                    // Calculate display size from pixel dimensions and DPI
+                    // displayPoints = pixels * 72 / dpi
+                    let displaySizeStr = '—';
+                    if (img.dpiX && img.dpiY && img.dpiX > 0 && img.dpiY > 0) {
+                        const displayW = Math.round(img.width * 72 / img.dpiX);
+                        const displayH = Math.round(img.height * 72 / img.dpiY);
+                        displaySizeStr = `${displayW}×${displayH}`;
+                    }
+                    
                     const typeClass = img.type === 'smask' ? 'smask' : 'image';
                     const safeObjectId = img.objectId.replace(/"/g, '&quot;');
                     const imgData = JSON.stringify(img).replace(/"/g, '&quot;');
                     const rowId = `img-row-${img.objectId.replace(' ', '-')}`;
                     
-                    // Check if this image is in top 5 lists
-                    const isTopDims = top5Dims.has(img.objectId);
-                    const isTopSize = top5Size.has(img.objectId);
+                    // Check if this image is in top 6 lists
+                    const isTopDims = top6Dims.has(img.objectId);
+                    const isTopSize = top6Size.has(img.objectId);
                     const rowClass = (isTopDims || isTopSize) ? 'image-row-highlight' : '';
                     
                     // Build badges
@@ -1571,18 +1819,21 @@
                                     </div>
                                     <button class="action-btn action-btn-download" 
                                             onclick="window.downloadImg('${safeObjectId}', ${imgData}, ${page.page})" 
-                                            title="Download as ${img.filter === 'DCTDecode' ? 'JPEG' : 'PNG'}">⬇</button>
+                                            title="Download as ${img.filter === 'DCTDecode' ? 'JPEG' : 'PNG'}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
                                 </div>
                             </td>
                             <td>${idx + 1}</td>
                             <td><span class="type-badge ${typeClass}">${img.type}</span></td>
-                            <td>${img.width}</td>
-                            <td>${img.height}</td>
-                            <td>${img.colorSpace}</td>
-                            <td>${img.bpc}</td>
-                            <td>${img.filter}</td>
+                            <td>${img.width}×${img.height}</td>
+                            <td>${displaySizeStr}</td>
+                            <td>${img.colorSpace}<br>${img.bpc}bpc<br>${img.filter}</td>
                             <td>${formatSize(img.size)}</td>
-                            <td><span style="color: ${percentColor}; font-weight: 600;">${sizePercent.toFixed(1)}%</span></td>
+                            <td>
+                                <div class="percent-cell">
+                                    <div class="percent-pie" style="background: conic-gradient(${percentColor} 0% ${sizePercent}%, var(--bg-tertiary) ${sizePercent}% 100%);"><div class="percent-pie-inner"></div></div>
+                                    <span class="percent-text" style="color: ${percentColor};">${sizePercent.toFixed(1)}%</span>
+                                </div>
+                            </td>
                             <td>${dpiDisplay}</td>
                             <td>${badges}</td>
                         </tr>
@@ -1609,8 +1860,9 @@
             
             for (const placeholder of placeholders) {
                 const objectId = placeholder.dataset.objectId;
-                const img = document.querySelector(`img.img-thumbnail[data-object-id="${objectId}"]`);
-                if (img) {
+                // Use nextElementSibling to get the paired img, not querySelector which only finds the first match
+                const img = placeholder.nextElementSibling;
+                if (img && img.classList.contains('img-thumbnail')) {
                     loadThumbnail(objectId, img, placeholder);
                 }
             }
