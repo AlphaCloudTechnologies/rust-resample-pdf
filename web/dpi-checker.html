@@ -225,6 +225,34 @@
             display: flex;
         }
 
+        .options-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .option-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-primary);
+            cursor: pointer;
+        }
+
+        .option-item:hover {
+            color: var(--text-primary);
+        }
+
         .file-icon {
             width: 44px;
             height: 44px;
@@ -1205,6 +1233,13 @@
                     <button class="file-remove" id="file-remove" title="Remove file">✕</button>
                 </div>
 
+                <div class="options-row">
+                    <label class="option-item">
+                        <input type="checkbox" id="exclude-smask" checked>
+                        <span>Exclude SMASK (transparency masks)</span>
+                    </label>
+                </div>
+
                 <!-- Process Button -->
                 <button class="btn-primary" id="analyze-btn" disabled style="margin-top: 20px;">
                     <span id="btn-text">Analyze PDF</span>
@@ -1392,10 +1427,12 @@
             document.getElementById('summary-filesize').textContent = selectedFile ? formatSize(selectedFile.size) : '-';
 
             // Collect all images with page info
+            const excludeSmask = document.getElementById('exclude-smask').checked;
             const allImages = [];
 
             pages.forEach(page => {
                 page.images.forEach(img => {
+                    if (excludeSmask && img.type === 'smask') return;
                     allImages.push({ ...img, pageNumber: page.page });
                 });
             });
@@ -1711,10 +1748,14 @@
 
             // Count totals and collect all images
             let totalImages = 0;
+            const excludeSmask = document.getElementById('exclude-smask').checked;
             const allImages = [];
             pages.forEach(p => {
-                totalImages += p.images.length;
-                p.images.forEach(img => allImages.push({ ...img, pageNumber: p.page }));
+                p.images.forEach(img => {
+                    if (excludeSmask && img.type === 'smask') return;
+                    totalImages++;
+                    allImages.push({ ...img, pageNumber: p.page });
+                });
             });
             
             document.getElementById('stat-pages').textContent = pages.length;
@@ -1742,11 +1783,15 @@
             let html = '';
             
             for (const page of pages) {
+                const pageImageCount = excludeSmask 
+                    ? page.images.filter(img => img.type !== 'smask').length 
+                    : page.images.length;
+                    
                 html += `
                     <div class="page-group">
                         <div class="page-header">
                             <span class="page-number">Page ${page.page}</span>
-                            <span class="page-image-count">${page.images.length} image${page.images.length !== 1 ? 's' : ''}</span>
+                            <span class="page-image-count">${pageImageCount} image${pageImageCount !== 1 ? 's' : ''}</span>
                         </div>
                         <div class="image-table-container">
                             <table class="image-table">
@@ -1768,8 +1813,13 @@
                 `;
                 
                 const pdfSize = selectedFile ? selectedFile.size : 1;
+                let displayIdx = 0;
                 
-                page.images.forEach((img, idx) => {
+                page.images.forEach((img) => {
+                    // Skip SMASK if excluded
+                    if (excludeSmask && img.type === 'smask') return;
+                    displayIdx++;
+                    
                     let dpiDisplay;
                     if (img.dpiX && img.dpiY) {
                         const maxDpi = Math.max(img.dpiX, img.dpiY);
@@ -1822,7 +1872,7 @@
                                             title="Download as ${img.filter === 'DCTDecode' ? 'JPEG' : 'PNG'}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
                                 </div>
                             </td>
-                            <td>${idx + 1}</td>
+                            <td>${displayIdx}</td>
                             <td><span class="type-badge ${typeClass}">${img.type}</span></td>
                             <td>${img.width}×${img.height}</td>
                             <td>${displaySizeStr}</td>
