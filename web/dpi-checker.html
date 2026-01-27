@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         :root {
             --bg-primary: #ffffff;
@@ -730,11 +731,9 @@
 
         .results-header {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 12px;
             margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 16px;
         }
 
         .results-title {
@@ -747,6 +746,48 @@
 
         .results-title-icon {
             font-size: 1.4rem;
+        }
+
+        .results-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .results-file-info {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+        }
+
+        .file-info-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .file-info-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .file-info-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-primary);
+        }
+
+        .file-info-value.highlight {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .file-info-sep {
+            color: var(--text-muted);
+            margin: 0 2px;
         }
 
         .results-summary {
@@ -791,6 +832,38 @@
         .btn-reset:hover {
             border-color: var(--text-muted);
             color: var(--text-primary);
+        }
+
+        .results-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-download-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: var(--accent-primary);
+            border: none;
+            border-radius: 8px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-download-all:hover:not(:disabled) {
+            background: #0860c7;
+            transform: translateY(-1px);
+        }
+
+        .btn-download-all:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
         }
 
         /* Image info table */
@@ -1265,31 +1338,44 @@
                         <span class="results-title-icon">📊</span>
                         Analysis Results
                     </div>
-                    <button class="btn-reset" id="reset-btn">
-                        ↺ Analyze Another
-                    </button>
+                    <div class="results-header-row">
+                        <div class="results-file-info">
+                            <span class="file-info-item">
+                                <span class="file-info-label">File</span>
+                                <span class="file-info-value" id="summary-filename">-</span>
+                            </span>
+                            <span class="file-info-sep">•</span>
+                            <span class="file-info-item">
+                                <span class="file-info-label">Size</span>
+                                <span class="file-info-value" id="summary-filesize">-</span>
+                            </span>
+                            <span class="file-info-sep">•</span>
+                            <span class="file-info-item">
+                                <span class="file-info-label">Pages</span>
+                                <span class="file-info-value highlight" id="stat-pages">-</span>
+                            </span>
+                            <span class="file-info-sep">•</span>
+                            <span class="file-info-item">
+                                <span class="file-info-label">Images</span>
+                                <span class="file-info-value highlight" id="stat-images">-</span>
+                            </span>
+                        </div>
+                        <div class="results-actions">
+                            <button class="btn-download-all" id="download-all-btn" title="Download all images as ZIP">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                <span id="download-all-text">Download All Images (ZIP)</span>
+                            </button>
+                            <button class="btn-reset" id="reset-btn">
+                                ↺ Analyze Another
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Summary Cards -->
                 <div class="summary-cards" id="summary-cards">
                     <div class="summary-card">
-                        <div class="summary-card-title">PDF Summary</div>
                         <div class="compact-summary">
-                            <div class="compact-row">
-                                <span class="compact-label">File</span>
-                                <span class="compact-value" id="summary-filename">-</span>
-                            </div>
-                            <div class="compact-row">
-                                <span class="compact-label">Size</span>
-                                <span class="compact-value" id="summary-filesize">-</span>
-                                <span class="compact-sep">•</span>
-                                <span class="compact-label">Pages</span>
-                                <span class="compact-value highlight" id="stat-pages">-</span>
-                                <span class="compact-sep">•</span>
-                                <span class="compact-label">Images</span>
-                                <span class="compact-value highlight" id="stat-images">-</span>
-                            </div>
-                            <div class="compact-divider"></div>
                             <div class="dpi-section-label">DPI</div>
                             <div class="dpi-section-desc">Median = typical quality of this PDF • High = highest DPI found • Low = lowest DPI found</div>
                             <div class="compact-group dpi-group">
@@ -1350,6 +1436,9 @@
         let selectedFile = null;
         let pdfBytes = null;
         let imageCache = new Map(); // Cache for loaded images: objectId -> { url, format, mimeType }
+        
+        // Configuration
+        const topLargestCount = 5; // Number of items to show in "Top Largest Images" lists
 
         // DOM elements
         const dropZone = document.getElementById('drop-zone');
@@ -1372,6 +1461,11 @@
         const modalImage = document.getElementById('modal-image');
         const modalInfo = document.getElementById('modal-info');
         const modalClose = document.getElementById('modal-close');
+        const downloadAllBtn = document.getElementById('download-all-btn');
+        const downloadAllText = document.getElementById('download-all-text');
+        
+        // Store analyzed pages for download all feature
+        let analyzedPages = null;
 
         // Initialize WASM
         async function initWasm() {
@@ -1518,13 +1612,13 @@
             const sortedByPixels = allImages
                 .filter(img => img.width && img.height)
                 .sort((a, b) => (b.width * b.height) - (a.width * a.height))
-                .slice(0, 6);
+                .slice(0, topLargestCount);
 
             // Top 6 largest images by file size
             const sortedByFileSize = allImages
                 .filter(img => img.size)
                 .sort((a, b) => b.size - a.size)
-                .slice(0, 6);
+                .slice(0, topLargestCount);
 
             // Populate pixel-based grid
             const largestGrid = document.getElementById('largest-images-grid');
@@ -1729,9 +1823,72 @@
             }
         }
 
+        // Download all images as ZIP
+        async function downloadAllAsZip() {
+            if (!analyzedPages || !pdfBytes) return;
+
+            const excludeSmask = document.getElementById('exclude-smask').checked;
+            
+            // Collect all images to download
+            const imagesToDownload = [];
+            analyzedPages.forEach(page => {
+                page.images.forEach(img => {
+                    if (excludeSmask && img.type === 'smask') return;
+                    imagesToDownload.push({ ...img, pageNumber: page.page });
+                });
+            });
+
+            if (imagesToDownload.length === 0) {
+                showError('No images to download.');
+                return;
+            }
+
+            downloadAllBtn.disabled = true;
+            const originalText = downloadAllText.textContent;
+            downloadAllText.textContent = `Preparing... (0/${imagesToDownload.length})`;
+
+            try {
+                const zip = new JSZip();
+                const pdfName = selectedFile ? selectedFile.name.replace(/\.pdf$/i, '') : 'pdf';
+                
+                let processed = 0;
+                for (const img of imagesToDownload) {
+                    try {
+                        const result = get_image_data(pdfBytes, img.objectId);
+                        const ext = result.format; // 'jpeg' or 'png'
+                        const filename = `page${String(img.pageNumber).padStart(3, '0')}_${img.objectId.replace(' ', '_')}.${ext}`;
+                        zip.file(filename, result.data);
+                    } catch (e) {
+                        console.warn(`Failed to get image ${img.objectId}:`, e);
+                    }
+                    processed++;
+                    downloadAllText.textContent = `Preparing... (${processed}/${imagesToDownload.length})`;
+                }
+
+                downloadAllText.textContent = 'Creating ZIP...';
+                const blob = await zip.generateAsync({ type: 'blob' });
+                
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `${pdfName}_images.zip`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+
+            } catch (e) {
+                console.error('Failed to create ZIP:', e);
+                showError('Failed to create ZIP file: ' + (e.message || e));
+            } finally {
+                downloadAllBtn.disabled = false;
+                downloadAllText.textContent = originalText;
+            }
+        }
+
         // Render image info table
         function renderImageInfo(pages) {
             const container = document.getElementById('image-info-content');
+            analyzedPages = pages; // Store for download all feature
             
             if (!pages || pages.length === 0) {
                 container.innerHTML = `
@@ -1766,14 +1923,14 @@
                 allImages
                     .filter(img => img.width && img.height)
                     .sort((a, b) => (b.width * b.height) - (a.width * a.height))
-                    .slice(0, 6)
+                    .slice(0, topLargestCount)
                     .map(img => img.objectId)
             );
             const top6Size = new Set(
                 allImages
                     .filter(img => img.size)
                     .sort((a, b) => b.size - a.size)
-                    .slice(0, 6)
+                    .slice(0, topLargestCount)
                     .map(img => img.objectId)
             );
 
@@ -2003,6 +2160,7 @@
 
         analyzeBtn.addEventListener('click', analyzePdf);
         resetBtn.addEventListener('click', reset);
+        downloadAllBtn.addEventListener('click', downloadAllAsZip);
 
         // Modal event handlers
         modalClose.addEventListener('click', () => {
