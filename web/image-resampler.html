@@ -672,7 +672,7 @@
         <header>
             <p class="instructions" style="color: #b0b0c0; font-size: 0.95rem; margin-top: 10px; line-height: 1.6; margin-left: auto; margin-right: auto;">
                 <strong style="color: #8a8a9a;">How to use:</strong> Upload a PDF file, set your target DPI (images above this will be downsampled), 
-                adjust JPEG quality for compression level, then click "Resample PDF" to process. 
+                adjust JPEG quality for compression level, then click "Compress PDF" to process. 
                 Your compressed file will be ready for download instantly.
             </p>
         </header>
@@ -970,7 +970,7 @@
                 progressContainer.classList.remove('visible');
             } finally {
                 processBtn.disabled = false;
-                btnText.textContent = 'Resample PDF';
+                btnText.textContent = 'Compress PDF';
                 btnSpinner.style.display = 'none';
             }
         }
