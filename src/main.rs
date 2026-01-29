@@ -30,6 +30,10 @@ struct Args {
     #[arg(long, default_value = "0")]
     min_dpi: f32,
 
+    /// Compress PDF streams (reduces file size)
+    #[arg(short, long, default_value = "true")]
+    compress_streams: bool,
+
     /// Verbose output
     #[arg(short, long)]
     verbose: bool,
@@ -42,6 +46,7 @@ fn main() -> anyhow::Result<()> {
         target_dpi: args.dpi,
         quality: args.quality,
         min_dpi: args.min_dpi,
+        compress_streams: args.compress_streams,
         verbose: args.verbose,
     };
 

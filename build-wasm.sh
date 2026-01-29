@@ -17,7 +17,7 @@ fi
 
 # Build WASM module
 echo "📦 Building WASM module..."
-wasm-pack build --target web --out-dir web/pkg --release
+RUSTFLAGS='--cfg getrandom_backend="wasm_js"' wasm-pack build --target web --out-dir web/pkg --release
 
 # Clean up unnecessary files
 echo "🧹 Cleaning up..."
