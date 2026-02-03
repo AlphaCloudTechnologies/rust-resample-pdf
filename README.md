@@ -2,6 +2,8 @@
 
 A fast Rust tool for downsampling images in PDF files. Available as a CLI and browser-based web app. Shrinks bloated PDFs by resampling high-DPI images to a target resolution while preserving visual quality.
 
+**🌐 [Live Demo](https://apitemplate.io/pdf-tools/compress-pdf-online-for-free/)** — Try it in your browser, no installation required.
+
 ## Features
 
 - **DPI-aware resampling** — calculates effective DPI from display dimensions, not just pixel count
