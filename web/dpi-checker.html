@@ -1430,15 +1430,57 @@
     </div>
 
     <script type="module">
-        import init, { get_pdf_image_info, get_image_data } from './pkg/resample_pdf.js';
-
         let wasmReady = false;
         let selectedFile = null;
-        let pdfBytes = null;
-        let imageCache = new Map(); // Cache for loaded images: objectId -> { url, format, mimeType }
+        let workerHasPdf = false;
+        let imageCache = new Map();
         
-        // Configuration
-        const topLargestCount = 5; // Number of items to show in "Top Largest Images" lists
+        const topLargestCount = 5;
+
+        // Web Worker for off-main-thread WASM processing
+        const worker = new Worker('./dpi-worker.js', { type: 'module' });
+        let _reqId = 0;
+        const _pending = new Map();
+
+        worker.onmessage = function(e) {
+            const { type, id } = e.data;
+            if (type === 'ready') {
+                wasmReady = true;
+                console.log('WASM worker ready');
+                return;
+            }
+            if (type === 'error' && id == null) {
+                console.error('Worker init error:', e.data.message);
+                showError('Failed to load the PDF analyzer. Please refresh the page.');
+                return;
+            }
+            const p = _pending.get(id);
+            if (!p) return;
+            _pending.delete(id);
+            if (type === 'error') {
+                p.reject(new Error(e.data.message));
+            } else {
+                p.resolve(e.data);
+            }
+        };
+
+        function workerRequest(msg, transferables) {
+            return new Promise((resolve, reject) => {
+                const id = ++_reqId;
+                _pending.set(id, { resolve, reject });
+                worker.postMessage({ ...msg, id }, transferables || []);
+            });
+        }
+
+        async function workerAnalyze(arrayBuffer) {
+            const res = await workerRequest({ type: 'analyze', buffer: arrayBuffer }, [arrayBuffer]);
+            return res.json;
+        }
+
+        async function workerGetImage(objectId) {
+            const res = await workerRequest({ type: 'getImage', objectId });
+            return { data: res.data, format: res.format, mimeType: res.mimeType };
+        }
 
         // DOM elements
         const dropZone = document.getElementById('drop-zone');
@@ -1464,22 +1506,7 @@
         const downloadAllBtn = document.getElementById('download-all-btn');
         const downloadAllText = document.getElementById('download-all-text');
         
-        // Store analyzed pages for download all feature
         let analyzedPages = null;
-
-        // Initialize WASM
-        async function initWasm() {
-            try {
-                await init();
-                wasmReady = true;
-                console.log('WASM initialized successfully');
-            } catch (e) {
-                console.error('Failed to initialize WASM:', e);
-                showError('Failed to load the PDF analyzer. Please refresh the page.');
-            }
-        }
-
-        initWasm();
 
         // Format file size
         function formatSize(bytes) {
@@ -1690,18 +1717,16 @@
             }
         }
 
-        // Load thumbnails for the largest images in summary
         async function loadLargestImageThumbnails() {
             const placeholders = document.querySelectorAll('.largest-image-thumb-placeholder');
             
             for (const placeholder of placeholders) {
                 const objectId = placeholder.dataset.largestId;
-                // Find the sibling img element (next element after placeholder)
                 const img = placeholder.nextElementSibling;
-                if (img && img.classList.contains('largest-image-thumb') && pdfBytes) {
+                if (img && img.classList.contains('largest-image-thumb') && workerHasPdf) {
                     try {
-                        const result = get_image_data(pdfBytes, objectId);
-                        const blob = new Blob([result.data], { type: result.mime_type });
+                        const result = await workerGetImage(objectId);
+                        const blob = new Blob([result.data], { type: result.mimeType });
                         img.src = URL.createObjectURL(blob);
                         img.onload = () => {
                             placeholder.style.display = 'none';
@@ -1746,15 +1771,15 @@
             }
         }
 
-        // Clear file
         function clearFile() {
             selectedFile = null;
-            pdfBytes = null;
+            workerHasPdf = false;
             imageCache.clear();
             fileInput.value = '';
             fileInfo.classList.remove('visible');
             analyzeBtn.disabled = true;
             hideError();
+            workerRequest({ type: 'clear' }).catch(() => {});
         }
 
         // Reset to initial state
@@ -1766,17 +1791,16 @@
             progressFill.style.width = '0%';
         }
 
-        // Load image and return cached data { url, format, mimeType }
         async function loadImage(objectId) {
             if (imageCache.has(objectId)) {
                 return imageCache.get(objectId);
             }
 
             try {
-                const result = get_image_data(pdfBytes, objectId);
-                const blob = new Blob([result.data], { type: result.mime_type });
+                const result = await workerGetImage(objectId);
+                const blob = new Blob([result.data], { type: result.mimeType });
                 const url = URL.createObjectURL(blob);
-                const cached = { url, format: result.format, mimeType: result.mime_type };
+                const cached = { url, format: result.format, mimeType: result.mimeType };
                 imageCache.set(objectId, cached);
                 return cached;
             } catch (e) {
@@ -1823,13 +1847,11 @@
             }
         }
 
-        // Download all images as ZIP
         async function downloadAllAsZip() {
-            if (!analyzedPages || !pdfBytes) return;
+            if (!analyzedPages || !workerHasPdf) return;
 
             const excludeSmask = document.getElementById('exclude-smask').checked;
             
-            // Collect all images to download
             const imagesToDownload = [];
             analyzedPages.forEach(page => {
                 page.images.forEach(img => {
@@ -1854,8 +1876,8 @@
                 let processed = 0;
                 for (const img of imagesToDownload) {
                     try {
-                        const result = get_image_data(pdfBytes, img.objectId);
-                        const ext = result.format; // 'jpeg' or 'png'
+                        const result = await workerGetImage(img.objectId);
+                        const ext = result.format;
                         const filename = `page${String(img.pageNumber).padStart(3, '0')}_${img.objectId.replace(' ', '_')}.${ext}`;
                         zip.file(filename, result.data);
                     } catch (e) {
@@ -2079,7 +2101,6 @@
         window.showModal = (objectId, imgInfo) => showImageModal(objectId, imgInfo);
         window.downloadImg = (objectId, imgInfo, pageNum) => downloadImage(objectId, imgInfo, pageNum);
 
-        // Analyze PDF
         async function analyzePdf() {
             if (!selectedFile || !wasmReady) return;
 
@@ -2092,24 +2113,20 @@
             progressText.textContent = 'Reading PDF...';
 
             try {
-                // Read file and store for later image extraction
                 const arrayBuffer = await selectedFile.arrayBuffer();
-                pdfBytes = new Uint8Array(arrayBuffer);
 
                 progressFill.style.width = '60%';
                 progressText.textContent = 'Scanning images...';
 
-                // Get image info
-                const imageInfoJson = get_pdf_image_info(pdfBytes);
+                const imageInfoJson = await workerAnalyze(arrayBuffer);
+                workerHasPdf = true;
                 const pages = JSON.parse(imageInfoJson);
 
                 progressFill.style.width = '100%';
                 progressText.textContent = 'Done!';
 
-                // Render results
                 renderImageInfo(pages);
 
-                // Show results
                 setTimeout(() => {
                     progressContainer.classList.remove('visible');
                     uploadCard.style.display = 'none';

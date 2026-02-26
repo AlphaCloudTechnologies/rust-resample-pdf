@@ -807,12 +807,45 @@
     </div>
 
     <script type="module">
-        import init, { resample_pdf_with_info } from './pkg/resample_pdf.js';
-
         let wasmReady = false;
         let selectedFile = null;
         let processedBlob = null;
         let originalSize = 0;
+
+        // Web Worker for off-main-thread WASM processing
+        const worker = new Worker('./resampler-worker.js', { type: 'module' });
+        let _reqId = 0;
+        const _pending = new Map();
+
+        worker.onmessage = function(e) {
+            const { type, id } = e.data;
+            if (type === 'ready') {
+                wasmReady = true;
+                console.log('WASM worker ready');
+                return;
+            }
+            if (type === 'error' && id == null) {
+                console.error('Worker init error:', e.data.message);
+                showError('Failed to load the PDF processor. Please refresh the page.');
+                return;
+            }
+            const p = _pending.get(id);
+            if (!p) return;
+            _pending.delete(id);
+            if (type === 'error') {
+                p.reject(new Error(e.data.message));
+            } else {
+                p.resolve(e.data);
+            }
+        };
+
+        function workerRequest(msg, transferables) {
+            return new Promise((resolve, reject) => {
+                const id = ++_reqId;
+                _pending.set(id, { resolve, reject });
+                worker.postMessage({ ...msg, id }, transferables || []);
+            });
+        }
 
         // DOM elements
         const dropZone = document.getElementById('drop-zone');
@@ -832,20 +865,6 @@
         const uploadCard = document.getElementById('upload-card');
         const downloadBtn = document.getElementById('download-btn');
         const resetBtn = document.getElementById('reset-btn');
-
-        // Initialize WASM
-        async function initWasm() {
-            try {
-                await init();
-                wasmReady = true;
-                console.log('WASM initialized successfully');
-            } catch (e) {
-                console.error('Failed to initialize WASM:', e);
-                showError('Failed to load the PDF processor. Please refresh the page.');
-            }
-        }
-
-        initWasm();
 
         // Format file size
         function formatSize(bytes) {
@@ -901,7 +920,6 @@
             progressFill.style.width = '0%';
         }
 
-        // Process PDF
         async function processPdf() {
             if (!selectedFile || !wasmReady) return;
 
@@ -914,48 +932,38 @@
             progressText.textContent = 'Reading PDF...';
 
             try {
-                // Read file
                 const arrayBuffer = await selectedFile.arrayBuffer();
-                const inputBytes = new Uint8Array(arrayBuffer);
 
-                progressFill.style.width = '40%';
-                progressText.textContent = 'Analyzing images...';
-
-                // Get options
                 const targetDpi = parseFloat(document.getElementById('target-dpi').value) || 150;
                 const quality = parseInt(document.getElementById('quality').value) || 75;
                 const minDpi = parseFloat(document.getElementById('min-dpi').value) || 0;
                 const compressStreams = document.getElementById('compress-streams').checked;
 
-                progressFill.style.width = '60%';
+                progressFill.style.width = '50%';
                 progressText.textContent = 'Resampling images...';
 
-                // Process PDF
-                const result = resample_pdf_with_info(inputBytes, targetDpi, quality, minDpi, compressStreams);
+                const result = await workerRequest(
+                    { type: 'resample', buffer: arrayBuffer, targetDpi, quality, minDpi, compressStreams },
+                    [arrayBuffer]
+                );
 
                 progressFill.style.width = '90%';
                 progressText.textContent = 'Finalizing...';
 
-                // Create download blob
-                const outputBytes = result.pdf_bytes;
-                processedBlob = new Blob([outputBytes], { type: 'application/pdf' });
+                processedBlob = new Blob([result.pdfBytes], { type: 'application/pdf' });
 
-                // Calculate reduction
                 const newSize = processedBlob.size;
                 const reduction = ((1 - newSize / originalSize) * 100).toFixed(1);
 
-                // Update stats
-                document.getElementById('stat-total').textContent = result.total_images;
-                document.getElementById('stat-resampled').textContent = result.resampled_images;
-                document.getElementById('stat-skipped').textContent = result.skipped_images;
+                document.getElementById('stat-total').textContent = result.totalImages;
+                document.getElementById('stat-resampled').textContent = result.resampledImages;
+                document.getElementById('stat-skipped').textContent = result.skippedImages;
                 document.getElementById('stat-reduction').textContent = reduction + '%';
 
-                // Set download link
                 const outputName = selectedFile.name.replace(/\.pdf$/i, '_resampled.pdf');
                 downloadBtn.href = URL.createObjectURL(processedBlob);
                 downloadBtn.download = outputName;
 
-                // Show results
                 progressFill.style.width = '100%';
                 
                 setTimeout(() => {
