@@ -10,6 +10,11 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+# One run per ref, so two pushes to main can't race on the "latest" release.
+concurrency:
+  group: build-web-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -42,9 +47,9 @@ jobs:
           if-no-files-found: error
 
   release:
-    name: Attach to release
+    name: Publish to releases
     needs: web
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -55,20 +60,32 @@ jobs:
           name: resample-pdf-web
           path: web
 
-      - name: Package web bundle
-        run: zip -r "resample-pdf-web-${GITHUB_REF_NAME}.zip" web
-
-      - name: Upload to release
+      - name: Publish web bundle
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
-          ASSET="resample-pdf-web-${GITHUB_REF_NAME}.zip"
-          gh release create "$GITHUB_REF_NAME" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "$GITHUB_REF_NAME" \
-            --generate-notes \
-            "$ASSET" \
-          || gh release upload "$GITHUB_REF_NAME" \
-            --repo "$GITHUB_REPOSITORY" \
-            --clobber \
-            "$ASSET"
+          set -euo pipefail
+
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            # Versioned release: create it if needed, otherwise replace the asset.
+            TAG="$GITHUB_REF_NAME"
+            ASSET="resample-pdf-web-${TAG}.zip"
+            zip -qr "$ASSET" web
+            gh release create "$TAG" --title "$TAG" --generate-notes "$ASSET" \
+              || gh release upload "$TAG" --clobber "$ASSET"
+          else
+            # Rolling build of main: replace the "latest" prerelease each time.
+            TAG="latest"
+            ASSET="resample-pdf-web-latest.zip"
+            zip -qr "$ASSET" web
+            gh release delete "$TAG" --yes --cleanup-tag || true
+            gh release create "$TAG" \
+              --title "Latest build (main)" \
+              --prerelease \
+              --target "$GITHUB_SHA" \
+              --notes "Automated build of \`main\` @ ${GITHUB_SHA:0:7}. Unzip and serve over HTTP." \
+              "$ASSET"
+          fi
+
+          echo "Published $ASSET to release $TAG" >> "$GITHUB_STEP_SUMMARY"
